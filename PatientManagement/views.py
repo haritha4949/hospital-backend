@@ -6,8 +6,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Patients
-from .serializers import PatientsSerializer,PatientVitalsSerializer,PatientAllergiesSerializer,PatientHistorySerializer,PatientDocumentsSerializer,PatientDetailsSerializer
+from .models import Patients,PatientHistory
+from .serializers import PatientsSerializer,PatientVitalsSerializer,PatientAllergiesSerializer,PatientHistorySerializer,PatientDocumentsSerializer,PatientDetailsSerializer,PatientListSerializer
 
 class PatientsAPI(APIView):
     permission_classes = [IsAuthenticated]
@@ -91,3 +91,31 @@ class PatientDetailAPIView(APIView):
             }
         )
         return Response(serializer.data)
+    
+
+class PatientListAPI(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        doctor_id = request.GET.get('doctor_id')
+        tenant_id = request.GET.get('tenant_id')
+        organization_id = request.GET.get('organization_id')
+
+        if not (doctor_id and tenant_id and organization_id):
+            return Response({"error": "doctor_id, tenant_id, and organization_id are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Get patient IDs treated by the doctor
+        patient_ids = PatientHistory.objects.filter(
+            doctor_id=doctor_id,
+            tenant_id=tenant_id,
+            organization_id=organization_id
+        ).values_list('patient_id', flat=True).distinct()
+
+        # Fetch patient details
+        patients = Patients.objects.filter(
+            patient_id__in=patient_ids,
+            tenant_id=tenant_id,
+            organization_id=organization_id
+        )
+
+        serializer = PatientListSerializer(patients, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
