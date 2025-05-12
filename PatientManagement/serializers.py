@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Patients, PatientVitals,PatientAllergies,PatientHistory,PatientDocuments
+from .models import Patients, PatientVitals,PatientAllergies,PatientHistory,PatientDocuments,Tenant,Organizations,Users
 
 class PatientsSerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,16 +17,22 @@ class PatientAllergiesSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PatientHistorySerializer(serializers.ModelSerializer):
+    tenant_id = serializers.PrimaryKeyRelatedField(queryset=Tenant.objects.all())
+    patient_id = serializers.PrimaryKeyRelatedField(queryset=Patients.objects.all())
+    organization_id = serializers.PrimaryKeyRelatedField(queryset=Organizations.objects.all())
+    doctor_id = serializers.PrimaryKeyRelatedField(queryset=Users.objects.all())
     class Meta:
         model = PatientHistory
-        fields = '__all__'
+        fields = ['tenant_id', 'patient_id', 'organization_id', 'doctor_id',
+                  'visit_date', 'diagnosis', 'treatment', 'notes', 'follow_up_date']
+       # fields = '__all__'
 
 class PatientDocumentsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientDocuments
         fields = '__all__'
 
-class PatientHistorySerializer(serializers.ModelSerializer):
+class PatientHistoryDetailsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PatientHistory
         fields = [
@@ -67,7 +73,7 @@ class PatientDetailsSerializer(serializers.ModelSerializer):
             organization_id=organization_id,
             doctor_id=doctor_id
         )
-        return PatientHistorySerializer(history_qs, many=True).data
+        return PatientHistoryDetailsSerializer(history_qs, many=True).data
     
 
 
@@ -76,8 +82,16 @@ class PatientListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patients
-        fields = ['patient_id', 'full_name', 'date_of_birth', 'gender', 'contact_number']
+        fields = ['patient_id','full_name', 'date_of_birth', 'gender', 'contact_number']
 
     def get_full_name(self, obj):
         return f"{obj.first_name} {obj.last_name}"
+    
+
+
+class PatientHistoryUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PatientHistory
+        fields = '__all__'
+
 

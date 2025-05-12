@@ -4,10 +4,10 @@ from django.shortcuts import render
 # PatientManagement/views.py
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from rest_framework import status
+from rest_framework import status,generics
 from rest_framework.permissions import IsAuthenticated
 from .models import Patients,PatientHistory
-from .serializers import PatientsSerializer,PatientVitalsSerializer,PatientAllergiesSerializer,PatientHistorySerializer,PatientDocumentsSerializer,PatientDetailsSerializer,PatientListSerializer
+from .serializers import PatientHistoryUpdateSerializer,PatientsSerializer,PatientVitalsSerializer,PatientAllergiesSerializer,PatientHistorySerializer,PatientDocumentsSerializer,PatientDetailsSerializer,PatientListSerializer
 
 class PatientsAPI(APIView):
     permission_classes = [IsAuthenticated]
@@ -20,6 +20,7 @@ class PatientsAPI(APIView):
 
 
 class PatientVitalsAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         serializer = PatientVitalsSerializer(data=request.data)
         if serializer.is_valid():
@@ -28,6 +29,7 @@ class PatientVitalsAPI(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class PatientAllergiesAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         serializer = PatientAllergiesSerializer(data=request.data)
         if serializer.is_valid():
@@ -36,14 +38,19 @@ class PatientAllergiesAPI(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class PatientHistoryAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
+        print("Received data:", request.data)  # Debug print
         serializer = PatientHistorySerializer(data=request.data)
         if serializer.is_valid():
+            #print("this is error",serializer.validated_data)
             serializer.save()
             return Response({"message": "Patient history created", "data": serializer.data}, status=status.HTTP_201_CREATED)
+            print("Errors:", serializer.errors)  # Debugging statement
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 class PatientDocumentsAPI(APIView):
+    permission_classes = [IsAuthenticated]
     def post(self, request):
         serializer = PatientDocumentsSerializer(data=request.data)
         if serializer.is_valid():
@@ -119,3 +126,8 @@ class PatientListAPI(APIView):
 
         serializer = PatientListSerializer(patients, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
+    
+class PatientHistoryUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = PatientHistory.objects.all()
+    serializer_class = PatientHistoryUpdateSerializer
+    lookup_field = 'history_id'
